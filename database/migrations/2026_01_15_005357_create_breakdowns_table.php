@@ -10,11 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('breakdowns', function (Blueprint $table) {
+        Schema::create('price_breakdowns', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->decimal('farmer_earning', 10, 2);
-            $table->decimal('plataform_free', 10, 2);
+            $table->decimal('plataform_fee', 10, 2);
             $table->decimal('logistics_cost', 10, 2);
             $table->decimal('taxes', 10, 2);
             $table->timestamps();
