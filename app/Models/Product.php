@@ -3,8 +3,36 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Product extends Model
 {
-    //
+    use HasFactory;
+
+    protected $fillable = [
+        'farm_profile_id',
+        'name',
+        'description',
+        'price',
+        'stock_quantity',
+        'unit_type',
+        'harvest_date',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'harvest_date' => 'date',
+        'is_active' => 'boolean',
+        'price' => 'decimal:2',
+    ];
+
+    public function farmProfile()
+    {
+        return $this->belongsTo(FarmProfile::class);
+    }
+
+    public function priceBreakdown()
+    {
+        return $this->hasOne(PriceBreakdown::class);
+    }
 }
