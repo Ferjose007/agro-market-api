@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->decimal('farmer_earning', 10, 2);
-            $table->decimal('plataform_fee', 10, 2);
+            $table->decimal('platform_fee', 10, 2);
             $table->decimal('logistics_cost', 10, 2);
             $table->decimal('taxes', 10, 2);
             $table->timestamps();

@@ -12,7 +12,7 @@ class PriceBreakdown extends Model
     protected $fillable = [
         'product_id',
         'farmer_earning',
-        'plataform_fee',
+        'platform_fee',
         'logistics_cost',
         'taxes'
     ];

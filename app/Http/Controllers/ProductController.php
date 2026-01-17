@@ -59,7 +59,7 @@ class ProductController extends Controller
                     'farmer_earning' => $validated['farmer_earning'],
                     'platform_fee' => $validated['platform_fee'],
                     'logistics_cost' => $validated['logistics_cost'],
-                    // Taxes lo dejamos en 0 por ahora o lo calculamos
+                    'taxes' => 0, // Taxes lo dejamos en 0 por ahora o lo calculamos
                 ]);
 
                 return $newProduct;
