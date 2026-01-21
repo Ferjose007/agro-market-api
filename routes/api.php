@@ -32,9 +32,22 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // --- Módulo Agricultor ---
+
+    // Mostrar perfil de granja
+    Route::get('/farm-profile', [FarmProfileController::class, 'show']);
+
     // Actualizar perfil de granja
     Route::post('/farm-profile', [FarmProfileController::class, 'update']);
 
     // Publicar producto nuevo
     Route::post('/products', [ProductController::class, 'store']);
+
+    // Mostrar un producto
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+
+    // Actualizar un producto
+    Route::put('/products/{id}', [ProductController::class, 'update']);
+
+    // Eliminar un producto
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 });

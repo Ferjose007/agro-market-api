@@ -6,6 +6,22 @@ use Illuminate\Http\Request;
 
 class FarmProfileController extends Controller
 {
+    // Función para LEER los datos (GET)
+    public function show(Request $request)
+    {
+        // Esto imprimirá el resultado directamente en la respuesta para depurar
+        // dd($request->user()->farmProfile); // <-- NO uses dd en API, usa dump o return
+
+        $data = $request->user()->farmProfile;
+
+        if (!$data) {
+            // Si esto sale, es que la relación falla o no hay datos
+            return response()->json(['message' => 'No se encontraron datos', 'debug_user_id' => $request->user()->id], 200);
+        }
+
+        return response()->json($data);
+    }
+
     // Crear o Actualizar perfil
     public function update(Request $request)
     {
