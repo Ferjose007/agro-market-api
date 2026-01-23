@@ -9,67 +9,71 @@ use Illuminate\Support\Facades\DB;
 class ProductController extends Controller
 {
     // Listar productos (Público)
-    public function index()
+    public function index(Request $request)
     {
-        // Cargamos también el perfil de la granja y el desglose de precios
-        return Product::with(['farmProfile', 'priceBreakdown'])
-            ->where('is_active', true)
+        $user = $request->user();
+
+        // --- BLINDAJE DE SEGURIDAD ---
+
+        // 1. Si $user es NULL (No hay sesión iniciada o token inválido)
+        if (!$user) {
+            return response()->json(['message' => 'No autorizado'], 401);
+        }
+
+        // 2. Si el usuario existe pero NO tiene granja
+        if (!$user->farmProfile) {
+            return response()->json([]); // Devolvemos lista vacía limpia
+        }
+
+        // --- FIN BLINDAJE ---
+
+        // Si llegamos aquí, es 100% seguro consultar
+        return Product::where('farm_profile_id', $user->farmProfile->id)
+            ->with('category')
             ->latest()
             ->get();
     }
 
-    // Crear producto (Solo Agricultores)
+    // --- FUNCIÓN PARA CREAR (STORE) ---
     public function store(Request $request)
     {
-        // 1. Validaciones (Ajustamos los nombres para coincidir con Vue)
-        $validated = $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'price_per_unit' => 'required|numeric|min:0', // <--- CAMBIADO
-            'stock_quantity' => 'required|integer|min:1',
-            'unit' => 'required|string', // <--- CAMBIADO (era unit_type)
-            'category_id' => 'required|exists:categories,id', // <--- FALTABA ESTE (Vue lo envía)
-
-            // Transparencia
-            'farmer_earning' => 'required|numeric',
-            'platform_fee' => 'required|numeric',
-            'logistics_cost' => 'required|numeric',
-        ]);
-
         $user = $request->user();
 
         if (!$user->farmProfile) {
-            return response()->json(['error' => 'Debes crear un perfil de granja.'], 403);
+            return response()->json(['message' => 'Primero crea tu granja.'], 403);
         }
 
-        try {
-            $product = DB::transaction(function () use ($user, $validated) {
-                // A. Crear Producto (Mapeamos los nombres correctamente)
-                $newProduct = $user->farmProfile->products()->create([
-                    'name' => $validated['name'],
-                    'description' => $validated['description'] ?? null,
-                    'price_per_unit' => $validated['price_per_unit'], // <--- CAMBIADO
-                    'stock_quantity' => $validated['stock_quantity'],
-                    'unit' => $validated['unit'], // <--- CAMBIADO
-                    'category_id' => $validated['category_id'], // <--- AGREGADO
-                ]);
+        // 1. Validamos SOLO lo que envía el formulario
+        // (QUITAMOS farmer_earning, platform_fee, etc. de aquí porque son calculados)
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price_per_unit' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|numeric|min:0',
+            'unit' => 'required|string',
+            'farming_type' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
 
-                // B. Desglose (Esto estaba bien)
-                $newProduct->priceBreakdown()->create([
-                    'farmer_earning' => $validated['farmer_earning'],
-                    'platform_fee' => $validated['platform_fee'],
-                    'logistics_cost' => $validated['logistics_cost'],
-                    'taxes' => 0,
-                ]);
+        // 2. CÁLCULO AUTOMÁTICO DE COSTOS 🧮
+        // Definimos las reglas de negocio (puedes ajustar los porcentajes)
+        $price = $validated['price_per_unit'];
 
-                return $newProduct;
-            });
+        $platformFee = $price * 0.10; // 10% Comisión de la plataforma
+        $logisticsCost = $price * 0.05; // 5% Costo logístico (ejemplo)
+        $farmerEarning = $price - $platformFee - $logisticsCost; // Lo que le queda al agricultor
 
-            return response()->json(['message' => 'Producto publicado correctamente', 'product' => $product], 201);
+        // 3. Inyectamos los datos calculados al array
+        $validated['farm_profile_id'] = $user->farmProfile->id;
+        $validated['platform_fee'] = $platformFee;
+        $validated['logistics_cost'] = $logisticsCost;
+        $validated['farmer_earning'] = $farmerEarning;
 
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error: ' . $e->getMessage()], 500);
-        }
+        // 4. Creamos el producto
+        $product = Product::create($validated);
+
+        return response()->json(['message' => 'Producto creado', 'product' => $product], 201);
     }
 
     public function show(string $id)
@@ -81,49 +85,40 @@ class ProductController extends Controller
         return response()->json($product);
     }
 
-    public function update(Request $request, string $id)
+    // --- FUNCIÓN PARA ACTUALIZAR (UPDATE) ---
+    public function update(Request $request, $id)
     {
-        // 1. Validar los datos (igual que en store, pero a veces algunos campos son opcionales)
+        $user = $request->user();
+
+        // Buscamos el producto y verificamos que sea DE ESTA GRANJA
+        $product = Product::where('id', $id)
+            ->where('farm_profile_id', $user->farmProfile->id)
+            ->firstOrFail();
+
+        // 1. Validamos
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'category_id' => 'exists:categories,id',
+            'name' => 'string|max:255',
             'description' => 'nullable|string',
-            'price_per_unit' => 'required|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
-            'unit' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-            // Datos del desglose
-            'farmer_earning' => 'required|numeric',
-            'platform_fee' => 'required|numeric',
-            'logistics_cost' => 'required|numeric',
+            'price_per_unit' => 'numeric|min:0',
+            'stock_quantity' => 'numeric|min:0',
+            'unit' => 'string',
+            'farming_type' => 'nullable|string',
+            'is_active' => 'boolean',
         ]);
 
-        // 2. Buscar el producto
-        $product = Product::findOrFail($id);
-
-        // 3. Verificar que el producto sea del usuario actual (Seguridad)
-        if ($product->farm_id !== $request->user()->farm->id) {
-            return response()->json(['message' => 'No tienes permiso para editar este producto'], 403);
+        // 2. Si cambió el precio, RECALCULAMOS todo 🔄
+        if ($request->has('price_per_unit')) {
+            $price = $validated['price_per_unit'];
+            $validated['platform_fee'] = $price * 0.10;
+            $validated['logistics_cost'] = $price * 0.05;
+            $validated['farmer_earning'] = $price - $validated['platform_fee'] - $validated['logistics_cost'];
         }
 
-        // 4. Actualizar datos básicos
-        $product->update([
-            'name' => $validated['name'],
-            'description' => $validated['description'],
-            'price_per_unit' => $validated['price_per_unit'],
-            'stock_quantity' => $validated['stock_quantity'],
-            'unit' => $validated['unit'],
-            'category_id' => $validated['category_id'],
-        ]);
+        // 3. Actualizamos
+        $product->update($validated);
 
-        // 5. Actualizar el desglose de precios (Relación)
-        $product->priceBreakdown()->update([
-            'farmer_earning' => $validated['farmer_earning'],
-            'platform_fee' => $validated['platform_fee'],
-            'logistics_cost' => $validated['logistics_cost'],
-            'taxes' => 0 // O el valor que corresponda
-        ]);
-
-        return response()->json(['message' => 'Producto actualizado correctamente', 'product' => $product]);
+        return response()->json(['message' => 'Producto actualizado', 'product' => $product]);
     }
 
     public function destroy(string $id)

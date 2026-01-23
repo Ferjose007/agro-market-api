@@ -5,49 +5,45 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\FarmProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CategoryController;
 
 // --------------------------------------------------------------------------
-// Rutas Públicas (No requieren Token)
+// Rutas Públicas (Cualquiera entra)
 // --------------------------------------------------------------------------
 
-// Autenticación
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Productos (Cualquiera puede ver qué se vende)
-Route::get('/products', [ProductController::class, 'index']);
+// ❌ BORRA ESTA LÍNEA DE AQUÍ:
+// Route::get('/products', [ProductController::class, 'index']); 
 
 
 // --------------------------------------------------------------------------
-// Rutas Protegidas (Requieren Token de Acceso)
+// Rutas Protegidas (Solo usuarios logueados)
 // --------------------------------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Cerrar sesión
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Usuario actual
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    // --- Módulo Agricultor ---
-
-    // Mostrar perfil de granja
+    Route::get('/dashboard-summary', [DashboardController::class, 'index']);
     Route::get('/farm-profile', [FarmProfileController::class, 'show']);
-
-    // Actualizar perfil de granja
     Route::post('/farm-profile', [FarmProfileController::class, 'update']);
 
-    // Publicar producto nuevo
+    // --- PRODUCTOS (Ahora todas están aquí adentro) ---
+
+    // ✅ LA MOVIMOS AQUÍ: Ahora Laravel sabrá quién es el usuario
+    Route::get('/products', [ProductController::class, 'index']);
+
     Route::post('/products', [ProductController::class, 'store']);
-
-    // Mostrar un producto
     Route::get('/products/{id}', [ProductController::class, 'show']);
-
-    // Actualizar un producto
     Route::put('/products/{id}', [ProductController::class, 'update']);
-
-    // Eliminar un producto
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    // Categorias
+    Route::get('/categories', [CategoryController::class, 'index']);
 });

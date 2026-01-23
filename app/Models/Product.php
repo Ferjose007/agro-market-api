@@ -17,8 +17,13 @@ class Product extends Model
         'price_per_unit',  // <--- CAMBIADO (Antes era 'price')
         'stock_quantity',
         'unit',            // <--- CAMBIADO (Antes era 'unit_type')
+        'farming_type',
         'harvest_date',
         'is_active',
+        'image_url',
+        'farmer_earning',
+        'platform_fee',
+        'logistics_cost',
     ];
 
     protected $casts = [
@@ -26,6 +31,11 @@ class Product extends Model
         'is_active' => 'boolean',
         'price' => 'decimal:2',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function farmProfile()
     {
