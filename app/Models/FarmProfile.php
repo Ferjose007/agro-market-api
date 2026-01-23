@@ -16,7 +16,9 @@ class FarmProfile extends Model
         'location_lng',
         'bio',
         'soil_type',
-        'whatsapp_number'
+        'whatsapp_number',
+        'address',
+        'contact_email',
     ];
 
     public function user()
