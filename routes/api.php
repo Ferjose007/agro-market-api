@@ -14,6 +14,8 @@ use App\Http\Controllers\CategoryController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/market-products', [ProductController::class, 'publicList']);
+Route::get('/market-sellers', [FarmProfileController::class, 'publicList']);
 
 // ❌ BORRA ESTA LÍNEA DE AQUÍ:
 // Route::get('/products', [ProductController::class, 'index']); 

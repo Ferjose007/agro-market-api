@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\FarmProfile;
 
 class FarmProfileController extends Controller
 {
@@ -39,5 +40,20 @@ class FarmProfileController extends Controller
         );
 
         return response()->json(['message' => 'Perfil actualizado', 'profile' => $profile]);
+    }
+    // --- LISTA PÚBLICA DE VENDEDORES ---
+    public function publicList()
+    {
+        // Traemos el perfil, contamos sus productos ACTIVOS
+        // y ordenamos por los que tienen más productos primero
+        $profiles = FarmProfile::withCount([
+            'products' => function ($query) {
+                $query->where('is_active', true);
+            }
+        ])
+            ->orderBy('products_count', 'desc') // Los más activos primero
+            ->get();
+
+        return response()->json($profiles);
     }
 }

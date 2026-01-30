@@ -140,4 +140,16 @@ class ProductController extends Controller
 
         return response()->json(['message' => 'Producto eliminado correctamente']);
     }
+    // --- API PÚBLICA (MARKETPLACE) ---
+    public function publicList()
+    {
+        // Traemos productos ACTIVOS, con STOCK positivo, y cargamos quién lo vende y la categoría
+        $products = Product::with(['farmProfile', 'category'])
+            ->where('is_active', true)
+            ->where('stock_quantity', '>', 0)
+            ->latest()
+            ->get();
+
+        return response()->json($products);
+    }
 }
