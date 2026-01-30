@@ -11,21 +11,19 @@ class Order extends Model
 
     // 1. Lista blanca de campos que se pueden guardar
     protected $fillable = [
-        'farm_profile_id',  // El vendedor (Tu granja)
-        'user_id',          // El comprador (El cliente)
-        'total_amount',     // Cuánto costó
-        'status',           // 'pendiente', 'completado', 'cancelado'
+        'farm_profile_id',
+        'user_id',
+        'total_amount',
+        'status',
     ];
 
     // 2. Relaciones
 
-    // Un pedido pertenece a un CLIENTE (Comprador)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Un pedido pertenece a una GRANJA (Vendedor)
     public function farmProfile()
     {
         return $this->belongsTo(FarmProfile::class);

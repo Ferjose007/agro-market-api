@@ -14,7 +14,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         // Detección de Granja
-        $myFarm = $user->farmProfile; // O $user->farm si cambiaste algo, pero farmProfile es lo estándar
+        $myFarm = $user->farmProfile;
 
         if (!$myFarm) {
             return response()->json(['has_farm' => false]);
@@ -48,7 +48,7 @@ class DashboardController extends Controller
 
         // Traemos los últimos 5 para la lista
         $recentOrders = Order::where('farm_profile_id', $farmId)
-            ->with('user:id,name') // Relación con el comprador
+            ->with('user:id,name')
             ->latest()
             ->take(5)
             ->get();

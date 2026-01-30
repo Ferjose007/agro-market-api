@@ -10,13 +10,13 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'farm_profile_id', // O 'farm_id' dependiendo de cómo lo llamaste al final
-        'category_id',     // <--- ¡Importante! No olvides agregar este nuevo
+        'farm_profile_id',
+        'category_id',
         'name',
         'description',
-        'price_per_unit',  // <--- CAMBIADO (Antes era 'price')
+        'price_per_unit',
         'stock_quantity',
-        'unit',            // <--- CAMBIADO (Antes era 'unit_type')
+        'unit',
         'farming_type',
         'harvest_date',
         'is_active',

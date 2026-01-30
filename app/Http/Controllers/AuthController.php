@@ -16,7 +16,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,farmer,buyer' // Validamos que el rol sea correcto
+            'role' => 'required|in:admin,farmer,buyer'
         ]);
 
         $user = User::create([
@@ -26,7 +26,6 @@ class AuthController extends Controller
             'role' => $request->role
         ]);
 
-        // Generar token inmediato para autologin
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -64,7 +63,7 @@ class AuthController extends Controller
     // Logout
     public function logout(Request $request)
     {
-        // Revocar el token actual
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Sesión cerrada']);

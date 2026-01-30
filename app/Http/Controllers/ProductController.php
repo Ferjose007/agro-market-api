@@ -13,21 +13,14 @@ class ProductController extends Controller
     {
         $user = $request->user();
 
-        // --- BLINDAJE DE SEGURIDAD ---
-
-        // 1. Si $user es NULL (No hay sesión iniciada o token inválido)
         if (!$user) {
             return response()->json(['message' => 'No autorizado'], 401);
         }
 
-        // 2. Si el usuario existe pero NO tiene granja
         if (!$user->farmProfile) {
-            return response()->json([]); // Devolvemos lista vacía limpia
+            return response()->json([]);
         }
 
-        // --- FIN BLINDAJE ---
-
-        // Si llegamos aquí, es 100% seguro consultar
         return Product::where('farm_profile_id', $user->farmProfile->id)
             ->with('category')
             ->latest()
@@ -44,7 +37,7 @@ class ProductController extends Controller
         }
 
         // 1. Validamos SOLO lo que envía el formulario
-        // (QUITAMOS farmer_earning, platform_fee, etc. de aquí porque son calculados)
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
@@ -60,9 +53,9 @@ class ProductController extends Controller
         // Definimos las reglas de negocio (puedes ajustar los porcentajes)
         $price = $validated['price_per_unit'];
 
-        $platformFee = $price * 0.10; // 10% Comisión de la plataforma
-        $logisticsCost = $price * 0.05; // 5% Costo logístico (ejemplo)
-        $farmerEarning = $price - $platformFee - $logisticsCost; // Lo que le queda al agricultor
+        $platformFee = $price * 0.10;
+        $logisticsCost = $price * 0.05;
+        $farmerEarning = $price - $platformFee - $logisticsCost;
 
         // 3. Inyectamos los datos calculados al array
         $validated['farm_profile_id'] = $user->farmProfile->id;
@@ -78,8 +71,7 @@ class ProductController extends Controller
 
     public function show(string $id)
     {
-        // Busca el producto o falla si no existe. 
-        // 'priceBreakdown' asegura que traigamos también los costos asociados.
+
         $product = Product::with('priceBreakdown')->findOrFail($id);
 
         return response()->json($product);
@@ -130,8 +122,6 @@ class ProductController extends Controller
             return response()->json(['message' => 'No tienes perfil de granja.'], 403);
         }
 
-        // CORRECCIÓN: Usamos 'farm_profile_id' en lugar de 'farm_id'
-        // Laravel usa snake_case del nombre del modelo padre (FarmProfile -> farm_profile_id)
         if ($product->farm_profile_id !== $user->farmProfile->id) {
             return response()->json(['message' => 'No autorizado. Este producto no es tuyo.'], 403);
         }
@@ -143,7 +133,7 @@ class ProductController extends Controller
     // --- API PÚBLICA (MARKETPLACE) ---
     public function publicList()
     {
-        // Traemos productos ACTIVOS, con STOCK positivo, y cargamos quién lo vende y la categoría
+
         $products = Product::with(['farmProfile', 'category'])
             ->where('is_active', true)
             ->where('stock_quantity', '>', 0)

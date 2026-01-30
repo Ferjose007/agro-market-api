@@ -11,7 +11,6 @@ class FarmProfileController extends Controller
     {
         $data = $request->user()->farmProfile;
 
-        // Si no existe, devolvemos null (el frontend mostrará formulario vacío)
         if (!$data) {
             return response()->json(null);
         }
@@ -25,18 +24,17 @@ class FarmProfileController extends Controller
         $validated = $request->validate([
             'farm_name' => 'required|string|max:255',
             'bio' => 'nullable|string',
-            'address' => 'nullable|string|max:255', // Nuevo
+            'address' => 'nullable|string|max:255',
             'whatsapp_number' => 'nullable|string|max:20',
-            'contact_email' => 'nullable|email|max:255',   // Nuevo
-            'location_lat' => 'nullable|numeric',         // Cambiado a nullable por si no usan GPS
+            'contact_email' => 'nullable|email|max:255',
+            'location_lat' => 'nullable|numeric',
             'location_lng' => 'nullable|numeric',
             'soil_type' => 'nullable|string',
         ]);
 
-        // Guardamos o actualizamos
         $profile = $request->user()->farmProfile()->updateOrCreate(
             ['user_id' => $request->user()->id],
-            $validated // Pasamos todo el array validado directamente
+            $validated
         );
 
         return response()->json(['message' => 'Perfil actualizado', 'profile' => $profile]);
@@ -44,14 +42,13 @@ class FarmProfileController extends Controller
     // --- LISTA PÚBLICA DE VENDEDORES ---
     public function publicList()
     {
-        // Traemos el perfil, contamos sus productos ACTIVOS
-        // y ordenamos por los que tienen más productos primero
+
         $profiles = FarmProfile::withCount([
             'products' => function ($query) {
                 $query->where('is_active', true);
             }
         ])
-            ->orderBy('products_count', 'desc') // Los más activos primero
+            ->orderBy('products_count', 'desc')
             ->get();
 
         return response()->json($profiles);
