@@ -9,15 +9,12 @@ class Order extends Model
 {
     use HasFactory;
 
-    // 1. Lista blanca de campos que se pueden guardar
     protected $fillable = [
         'farm_profile_id',
         'user_id',
         'total_amount',
         'status',
     ];
-
-    // 2. Relaciones
 
     public function user()
     {
@@ -27,5 +24,10 @@ class Order extends Model
     public function farmProfile()
     {
         return $this->belongsTo(FarmProfile::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

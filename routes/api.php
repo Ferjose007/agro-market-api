@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\FarmProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\OrderController;
 
 // --------------------------------------------------------------------------
 // Rutas Públicas (Cualquiera entra)
@@ -34,7 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- PRODUCTOS (Ahora todas están aquí adentro) ---
 
-    // ✅ LA MOVIMOS AQUÍ: Ahora Laravel sabrá quién es el usuario
     Route::get('/products', [ProductController::class, 'index']);
 
     Route::post('/products', [ProductController::class, 'store']);
@@ -44,4 +44,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Categorias
     Route::get('/categories', [CategoryController::class, 'index']);
+
+    // Rutas de PEDIDOS
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/farmer/sales', [OrderController::class, 'indexFarmer']);
+
+    Route::get('/orders', [OrderController::class, 'index']); // Historial Comprador
 });

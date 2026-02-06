@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -26,6 +27,8 @@ class AuthController extends Controller
             'role' => $request->role
         ]);
 
+        $user->load('farmProfile');
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -39,20 +42,15 @@ class AuthController extends Controller
     // Login
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $user = User::where('email', $request->email)->firstOrFail();
 
         $user->load('farmProfile');
+
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'access_token' => $token,
