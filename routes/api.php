@@ -8,6 +8,7 @@ use App\Http\Controllers\FarmProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Api\ForgotPasswordController;
 
 // --------------------------------------------------------------------------
 // Rutas Públicas (Cualquiera entra)
@@ -17,6 +18,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/market-products', [ProductController::class, 'publicList']);
 Route::get('/market-sellers', [FarmProfileController::class, 'publicList']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 // --------------------------------------------------------------------------
 // Rutas Protegidas (Solo usuarios logueados)
