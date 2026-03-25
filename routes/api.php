@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Api\ForgotPasswordController;
+use App\Http\Controllers\PaymentController;
 
 // --------------------------------------------------------------------------
 // Rutas Públicas (Cualquiera entra)
@@ -39,7 +40,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- PRODUCTOS (Ahora todas están aquí adentro) ---
 
     Route::get('/products', [ProductController::class, 'index']);
-
     Route::post('/products', [ProductController::class, 'store']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
@@ -51,6 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas de PEDIDOS
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/farmer/sales', [OrderController::class, 'indexFarmer']);
-
     Route::get('/orders', [OrderController::class, 'index']); // Historial Comprador
+
+    // --- INTEGRACIÓN MERCADO PAGO ---
+    Route::post('/create-preference', [PaymentController::class, 'createPreference']);
 });
