@@ -63,4 +63,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class, 'buyer_id');
     }
+
+    // --- FUNCIONES DE AYUDA (HELPERS) PARA ROLES ---
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isFarmer()
+    {
+        return $this->role === 'farmer';
+    }
+
+    public function isBuyer()
+    {
+        return $this->role === 'buyer';
+    }
 }

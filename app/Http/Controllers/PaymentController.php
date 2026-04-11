@@ -3,76 +3,62 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use MercadoPago\MercadoPagoConfig;
-use MercadoPago\Client\Preference\PreferenceClient;
-use MercadoPago\Exceptions\MPApiException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
-    public function createPreference(Request $request)
+    public function processCulqiCharge(Request $request)
     {
         try {
-            $token = env('MERCADOPAGO_ACCESS_TOKEN');
-            if (empty($token)) {
-                throw new \Exception("El Token de Mercado Pago no está configurado.");
-            }
-
-            MercadoPagoConfig::setAccessToken($token);
-
-            $client = new PreferenceClient();
-            $items = [];
-
-            foreach ($request->items as $item) {
-                $price = (float) $item['price'];
-                if ($price <= 0) {
-                    throw new \Exception("El producto '{$item['name']}' tiene un precio inválido.");
-                }
-
-                $items[] = [
-                    "id" => (string) ($item['id'] ?? rand(1000, 9999)),
-                    "title" => (string) $item['name'],
-                    "quantity" => (int) ($item['quantity'] ?? 1),
-                    "unit_price" => $price,
-                    "currency_id" => "PEN"
-                ];
-            }
-
-            $preference = $client->create([
-                "items" => $items,
-                "back_urls" => [
-                    "success" => "http://localhost:5173/checkout/success",
-                    "failure" => "http://localhost:5173/cart",
-                    "pending" => "http://localhost:5173/cart"
-                ],
-                // "auto_return" => "approved", 
-                "statement_descriptor" => "AGROMARKET"
+            // 1. Validar que Vue nos envíe el token de la tarjeta y el monto
+            $request->validate([
+                'token' => 'required|string',
+                'amount' => 'required|numeric',
+                'email' => 'required|email'
             ]);
 
-            return response()->json([
-                'status' => 'success',
-                'id' => $preference->id,
-                'init_point' => $preference->sandbox_init_point
-            ]);
+            // 2. Culqi requiere que el monto se envíe en céntimos (ej. S/ 10.50 -> 1050)
+            $amountInCents = (int) round($request->amount * 100);
 
-        } catch (MPApiException $e) {
-            $response = $e->getApiResponse();
-            $errorDetails = $response ? $response->getContent() : 'Sin detalles';
+            // 3. Hacer la petición de cobro (Cargo) a la API de Culqi
+            $response = Http::withToken(env('CULQI_SECRET_KEY'))
+                ->post('https://api.culqi.com/v2/charges', [
+                    'amount' => $amountInCents,
+                    'currency_code' => 'PEN',
+                    'email' => $request->email,
+                    'source_id' => $request->token,
+                    'antifraud_details' => [
+                        'first_name' => 'Cliente', // Aquí podrías pasar el nombre real
+                        'last_name' => 'AgroMarket',
+                        'phone_number' => '999999999'
+                    ]
+                ]);
 
-            Log::error('MPApiException: ', ['detalles' => $errorDetails]);
+            $result = $response->json();
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Mercado Pago rechazó los datos.',
-                'mp_error' => $errorDetails
-            ], 500);
+            // 4. Evaluar la respuesta de Culqi
+            if ($response->successful()) {
+                // El cobro fue exitoso
+                return response()->json([
+                    'status' => 'success',
+                    'charge_id' => $result['id'],
+                    'message' => 'Pago procesado correctamente'
+                ]);
+            } else {
+                // Culqi rechazó el pago (fondos insuficientes, tarjeta inválida, etc.)
+                Log::error('Culqi Charge Error: ', $result);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $result['user_message'] ?? 'El pago fue rechazado por el procesador.'
+                ], 400);
+            }
 
         } catch (\Exception $e) {
-            Log::error('Excepción general: ' . $e->getMessage());
-
+            Log::error('Excepción en Culqi: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => 'Ocurrió un error interno en el servidor.'
             ], 500);
         }
     }
